@@ -9,7 +9,7 @@ app.listen(3000, () => {
   console.log("Server is running on port 3000");
 
   const url = "https://mini-auth.onrender.com/ping"; // Must be a valid route
-  const interval = 30000; // 30 seconds
+  const interval = 300000; // 300 seconds 5 min
 
   setInterval(() => {
     axios
