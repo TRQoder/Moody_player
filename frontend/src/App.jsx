@@ -120,6 +120,7 @@ const handlePlayPause = (track) => {
             playsInline
             muted
             className="w-full max-w-xs aspect-square object-cover rounded-lg shadow-lg border border-white/30"
+            style={{ transform: "scaleX(-1)" }} // 🔹 Flip horizontally
           ></video>
           <p className="mt-4 text-sm text-gray-300">
             Click the button to detect your current mood using AI.
