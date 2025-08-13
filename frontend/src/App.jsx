@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IoMdPlay,IoIosPause  } from "react-icons/io";
+import { IoMdPlay, IoIosPause } from "react-icons/io";
 import axios from "./api/axiosConfig";
 import * as faceapi from "face-api.js";
 
@@ -29,7 +29,7 @@ export default function App() {
     startCamera();
   }, []);
 
-  // Load models
+  // Load face detection models
   useEffect(() => {
     async function loadModels() {
       await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
@@ -58,29 +58,38 @@ export default function App() {
     }
   };
 
-const handlePlayPause = (track) => {
-  if (!audioRef.current) return;
+  const handlePlayPause = (track) => {
+    if (!audioRef.current) return;
 
-  if (currentTrack === track.audio) {
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+    // If clicking the same track
+    if (currentTrack === track.audio) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play().catch(err => console.warn("Play blocked:", err));
+        setIsPlaying(true);
+      }
     } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+      // Stop current track
+      audioRef.current.pause();
+      audioRef.current.src = track.audio;
+      audioRef.current.currentTime = 0;
+      setProgress(0);
+      setCurrentTrack(track.audio);
+
+      // Wait until audio is ready before playing
+      const playWhenReady = () => {
+        audioRef.current.play().catch(err => console.warn("Play blocked:", err));
+        setIsPlaying(true);
+        audioRef.current.removeEventListener("canplaythrough", playWhenReady);
+      };
+      audioRef.current.addEventListener("canplaythrough", playWhenReady);
+      audioRef.current.load();
     }
-  } else {
-    audioRef.current.src = track.audio;
-    audioRef.current.currentTime = 0; // start from beginning
-    setProgress(0); // reset progress bar
-    audioRef.current.play();
-    setCurrentTrack(track.audio);
-    setIsPlaying(true);
-  }
-};
+  };
 
-
-  // Update progress as song plays
+  // Update progress
   useEffect(() => {
     if (!audioRef.current) return;
 
@@ -120,7 +129,7 @@ const handlePlayPause = (track) => {
             playsInline
             muted
             className="w-full max-w-xs aspect-square object-cover rounded-lg shadow-lg border border-white/30"
-            style={{ transform: "scaleX(-1)" }} // 🔹 Flip horizontally
+            style={{ transform: "scaleX(-1)" }}
           ></video>
           <p className="mt-4 text-sm text-gray-300">
             Click the button to detect your current mood using AI.
@@ -139,7 +148,7 @@ const handlePlayPause = (track) => {
           </motion.button>
         </div>
 
-        {/* Right: Recommended Tracks */}
+        {/* Right: Tracks */}
         <div className="flex-1 mt-6 md:mt-0">
           <h2 className="text-lg font-semibold mb-4 text-blue-400">Recommended Tracks</h2>
           <AnimatePresence>
@@ -182,17 +191,14 @@ const handlePlayPause = (track) => {
                         )}
                       </div>
 
-                      <audio
-                        ref={audioRef}
-                        className="hidden"
-                        onEnded={() => setIsPlaying(false)}
-                      />
-
                       <motion.button
                         onClick={() => handlePlayPause(track)}
                         whileTap={{ scale: 0.9 }}
                         animate={currentTrack === track.audio && isPlaying ? { scale: [1, 1.2, 1] } : {}}
-                        transition={{ repeat: currentTrack === track.audio && isPlaying ? Infinity : 0, duration: 0.6 }}
+                        transition={{
+                          repeat: currentTrack === track.audio && isPlaying ? Infinity : 0,
+                          duration: 0.6
+                        }}
                         className="text-gray-300 hover:text-blue-400 text-xl cursor-pointer"
                       >
                         {currentTrack === track.audio && isPlaying ? <IoIosPause /> : <IoMdPlay />}
@@ -209,6 +215,9 @@ const handlePlayPause = (track) => {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* Persistent Audio Element */}
+      <audio ref={audioRef} className="hidden" onEnded={() => setIsPlaying(false)} />
     </div>
   );
 }
