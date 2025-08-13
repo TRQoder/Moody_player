@@ -4,6 +4,16 @@ const connectToDB = require("./src/db/db");
 
 connectToDB()
 
-app.listen(3000,()=>{
-    console.log("server is running on port 3000"); 
-})
+app.listen(3000, () => {
+  console.log("Server is running on port 3000");
+
+  const url = "https://mini-auth.onrender.com/ping"; // Must be a valid route
+  const interval = 30000; // 30 seconds
+
+  setInterval(() => {
+    axios
+      .get(url)
+      .then(() => console.log("Self-ping sent to keep Render awake"))
+      .catch((err) => console.error("Self-ping failed:", err.message));
+  }, interval);
+});
